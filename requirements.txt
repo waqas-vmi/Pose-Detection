@@ -12,3 +12,7 @@ pydantic
 unstructured
 chromadb
 python-dotenv
+opencv-python
+mediapipe
+jinja2
+python-multipart
