@@ -3,6 +3,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, JSONResponse
 import uuid
+import base64
 import shutil
 import os
 from app.process import calculate_bmi
@@ -55,16 +56,21 @@ async def form_post(request: Request,
 
 @app.post("/process-image")
 async def process_image_api(
-    image: UploadFile = File(...),
+    image: str = Form(...),
     height: float = Form(...),
     weight: float = Form(...)
 ):
     try:
+        if image.startswith("data:"):
+            header, image = image.split(",", 1)
+
+        # Decode base64 string
+        image_data = base64.b64decode(image)
         # Save uploaded image
-        filename = f"{uuid.uuid4().hex}_{image.filename}"
+        filename = f"{uuid.uuid4().hex}.jpg"
         file_path = os.path.join(UPLOAD_DIR, filename)
         with open(file_path, "wb") as f:
-            shutil.copyfileobj(image.file, f)
+            f.write(image_data)
 
         # Process image using your logic
         result = calculate_bmi(file_path, height, weight)
