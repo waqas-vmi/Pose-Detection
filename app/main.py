@@ -8,10 +8,14 @@ import os
 from app.process import calculate_bmi
 
 app = FastAPI()
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
-templates = Jinja2Templates(directory="app/templates")
-UPLOAD_DIR = "app/static/uploads"
+
+# Ensure the static directory and uploads directory exist
+STATIC_DIR = "app/static"
+UPLOAD_DIR = os.path.join(STATIC_DIR, "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+templates = Jinja2Templates(directory="app/templates")
 
 @app.get("/", response_class=HTMLResponse)
 async def form_get(request: Request):
@@ -25,7 +29,7 @@ async def form_post(request: Request,
     try:
         filename = f"{uuid.uuid4().hex}_{image.filename}"
         file_path = os.path.join(UPLOAD_DIR, filename)
-        with open(filename, "wb") as f:
+        with open(file_path, "wb") as f:
             shutil.copyfileobj(image.file, f)
 
         # Use your logic from process.py
