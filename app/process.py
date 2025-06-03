@@ -23,9 +23,9 @@ def validate_image_orientation(landmarks):
     hip_distance = abs(hip_right.x - hip_left.x)
 
     if shoulder_distance > 0.15 and hip_distance > 0.15:
-        return "front"
+        return "Front"
     else:
-        return "side"
+        return "Side"
 
 def calculate_bmi(image_path, declared_height_cm, declared_weight_kg):
     image = cv2.imread(image_path)

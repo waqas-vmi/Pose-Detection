@@ -79,10 +79,18 @@
     {% if result %}
         <div class="result">
             <h3>Result</h3>
+            <p><strong>Input Height:</strong> {{ result.input_height_cm }}</p>
+            <p><strong>Input Weight:</strong> {{ result.input_weight_kg }}</p>
             <p><strong>BMI:</strong> {{ result.bmi }}</p>
-            <!-- <p><strong>Visual Height Ratio:</strong> {{ result.visual_height_ratio }}</p> -->
-            <!-- <p><strong>Shoulder Width Ratio:</strong> {{ result.shoulder_width_ratio }}</p> -->
+            <p><strong>Visual Height Ratio:</strong> {{ result.visual_height_ratio }}</p>
+            <p><strong>Shoulder Width Ratio:</strong> {{ result.shoulder_width_ratio }}</p>
             <p><strong>Orientation:</strong> {{ result.orientation }}</p>
+            {% if image_url %}
+                <div>
+                    <h3>Uploaded Image:</h3>
+                    <img src="{{ image_url }}" alt="Uploaded image" style="max-width: 300px;" />
+                </div>
+            {% endif %}
         </div>
     {% endif %}
 
