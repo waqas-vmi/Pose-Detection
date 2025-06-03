@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request, UploadFile, File, Form
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 import uuid
 import shutil
 import os
@@ -52,3 +52,32 @@ async def form_post(request: Request,
             "request": request,
             "error": str(e)
         })
+
+@app.post("/process-image")
+async def process_image_api(
+    image: UploadFile = File(...),
+    height: float = Form(...),
+    weight: float = Form(...)
+):
+    try:
+        # Save uploaded image
+        filename = f"{uuid.uuid4().hex}_{image.filename}"
+        file_path = os.path.join(UPLOAD_DIR, filename)
+        with open(file_path, "wb") as f:
+            shutil.copyfileobj(image.file, f)
+
+        # Process image using your logic
+        result = calculate_bmi(file_path, height, weight)
+
+        # Return result
+        if "error" in result:
+            return JSONResponse(status_code=400, content={"error": result["error"]})
+
+        return {
+            "filename": filename,
+            "bmi_result": result,
+            "image_url": f"/static/uploads/{filename}"
+        }
+
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
