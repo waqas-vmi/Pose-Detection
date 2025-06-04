@@ -5,10 +5,18 @@ from fastapi.responses import HTMLResponse, JSONResponse
 import uuid
 import base64
 import shutil
+import logging
 import os
 from app.process import calculate_bmi
 
 app = FastAPI()
+
+# Configure logging
+logging.basicConfig(
+    filename="app.log",
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
 # Ensure the static directory and uploads directory exist
 STATIC_DIR = "app/static"
@@ -28,6 +36,12 @@ async def form_post(request: Request,
                     height: float = Form(...),
                     weight: float = Form(...)):
     try:
+
+        # Log raw inputs (you may want to truncate the image string to avoid huge logs)
+        logging.info("Request data=%s", request)
+        logging.info("Received request with height=%s, weight=%s", height, weight)
+        logging.info("Image (truncated): %s", image[:30])  # Only log the first 30 characters
+
         filename = f"{uuid.uuid4().hex}_{image.filename}"
         file_path = os.path.join(UPLOAD_DIR, filename)
         with open(file_path, "wb") as f:
