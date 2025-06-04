@@ -3,6 +3,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, JSONResponse
+from pydantic import BaseModel
 import uuid
 import base64
 import shutil
@@ -22,9 +23,12 @@ app.add_middleware(
 
 # Configure logging
 logging.basicConfig(
-    filename="app.log",
     level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.FileHandler("app.log"),
+        logging.StreamHandler()
+    ]
 )
 
 # Ensure the static directory and uploads directory exist
@@ -34,6 +38,11 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 templates = Jinja2Templates(directory="app/templates")
+
+class ImagePayload(BaseModel):
+    image: str
+    height: float
+    weight: float
 
 @app.get("/", response_class=HTMLResponse)
 async def form_get(request: Request):
@@ -45,12 +54,6 @@ async def form_post(request: Request,
                     height: float = Form(...),
                     weight: float = Form(...)):
     try:
-
-        # Log raw inputs (you may want to truncate the image string to avoid huge logs)
-        logging.info("Request data=%s", request)
-        logging.info("Received request with height=%s, weight=%s", height, weight)
-        logging.info("Image (truncated): %s", image[:30])  # Only log the first 30 characters
-
         filename = f"{uuid.uuid4().hex}_{image.filename}"
         file_path = os.path.join(UPLOAD_DIR, filename)
         with open(file_path, "wb") as f:
@@ -78,12 +81,18 @@ async def form_post(request: Request,
         })
 
 @app.post("/process-image")
-async def process_image_api(
-    image: str = Form(...),
-    height: float = Form(...),
-    weight: float = Form(...)
-):
+async def process_image_api(payload: ImagePayload, request: Request):
     try:
+        image = payload.image
+        height = payload.height
+        weight = payload.weight
+        
+        if not image or not height or not weight:
+            return JSONResponse(status_code=400, content={"error": "Invalid input data"})
+        # Check if image is a base64 string
+        if not isinstance(image, str):
+            return JSONResponse(status_code=400, content={"error": "Image must be a base64 string"})
+
         if image.startswith("data:"):
             header, image = image.split(",", 1)
 
