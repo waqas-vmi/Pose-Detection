@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel
+import requests
 import uuid
 import base64
 import shutil
@@ -43,6 +44,7 @@ class ImagePayload(BaseModel):
     image: str
     height: float
     weight: float
+    userId: int
 
 @app.get("/", response_class=HTMLResponse)
 async def form_get(request: Request):
@@ -86,6 +88,7 @@ async def process_image_api(payload: ImagePayload, request: Request):
         image = payload.image
         height = payload.height
         weight = payload.weight
+        userId = payload.userId
         
         if not image or not height or not weight:
             return JSONResponse(status_code=400, content={"error": "Invalid input data"})
@@ -110,6 +113,22 @@ async def process_image_api(payload: ImagePayload, request: Request):
         # Return result
         if "error" in result:
             return JSONResponse(status_code=400, content={"error": result["error"]})
+        
+        if(result["bmi_verified"] == True):
+            logging.info(f"User {userId} BMI verified successfully.")
+            try:
+                api_response = requests.post(
+                    "https://staging.mayfairweightlossclinic.co.uk/api/ImageVerify",
+                    json={"user_id": userId, "status": True},
+                    headers={"Content-Type": "application/json"},
+                    timeout=5
+                )
+                api_response.raise_for_status()
+                logging.info(f"Successfully called external API for user {userId}. Response: {api_response.json()}")
+            except requests.RequestException as e:
+                logging.error(f"Failed to call external API for user {userId}: {str(e)}")
+        else:
+            logging.warning(f"User {userId} BMI verification failed: {result['verification_result']}")
 
         return {
             "filename": filename,

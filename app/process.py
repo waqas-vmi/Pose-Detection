@@ -128,9 +128,11 @@ def calculate_bmi(image_path, declared_height_cm, declared_weight_kg):
 
     # Difference threshold: We can set a tolerance for acceptable difference
     bmi_difference = abs(visual_bmi - declared_bmi)
+    bmi_verified = True
     verification_result = "Verification passed"
 
     if visual_bmi > 3.0:  # Set an acceptable threshold for discrepancy (lowered the threshold)
+        bmi_verified = False
         verification_result = f"Possible mismatch - BMI discrepancy ({bmi_difference:.2f})"
         logging.warning(f"BMI mismatch detected: {bmi_difference:.2f}")
 
@@ -144,7 +146,8 @@ def calculate_bmi(image_path, declared_height_cm, declared_weight_kg):
         "visual_body_ratio": round(body_ratio, 2),
         "orientation": orientation,
         "bmi_category": bmi_match,
-        "verification_result": verification_result
+        "verification_result": verification_result,
+        "bmi_verified": bmi_verified
     }
 
     logging.info(f"Response: {response}")
