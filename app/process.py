@@ -15,8 +15,8 @@ mp_pose = mp.solutions.pose
 pose = mp_pose.Pose(
     static_image_mode=True,
     model_complexity=2,
-    enable_segmentation=False,
-    min_detection_confidence=0.7
+    min_detection_confidence=0.9,
+    smooth_landmarks=True,
 )
 
 def validate_image_orientation(landmarks):
@@ -57,13 +57,15 @@ def check_full_body_landmarks(landmarks):
 def calculate_visual_bmi(declared_weight_kg, visual_height_ratio, shoulder_width_ratio):
     if visual_height_ratio <= 0 or shoulder_width_ratio <= 0:
         return {"error": "Invalid visual measurements."}
+    
+    # Tuned logic
+    body_ratio = visual_height_ratio / shoulder_width_ratio
 
-    # Use a normalizing factor for height (1.7m as average height)
-    visual_height_m = 1.7  # Assume an average human height in meters
+    # Adjust visual height with empirically tuned scaling
+    visual_height_m = 1.65 + (body_ratio - 2) * 0.2  # 1.65m base + adjust slightly
 
-    # Visual height is adjusted based on the body ratio
-    visual_height_m *= visual_height_ratio
-    visual_height_m /= shoulder_width_ratio  # Scale according to shoulder width
+    # Clamp to prevent unrealistic height
+    visual_height_m = max(1.4, min(2.1, visual_height_m))
 
     # Calculate the visual BMI using the visual height
     visual_bmi = declared_weight_kg / (visual_height_m ** 2)
@@ -131,14 +133,14 @@ def calculate_bmi(image_path, declared_height_cm, declared_weight_kg):
     bmi_verified = True
     verification_result = "Verification passed"
 
-    if visual_bmi > 3.0:  # Set an acceptable threshold for discrepancy (lowered the threshold)
+    if bmi_difference > 5.0:  # Set an acceptable threshold for discrepancy (lowered the threshold)
         bmi_verified = False
         verification_result = f"Possible mismatch - BMI discrepancy ({bmi_difference:.2f})"
         logging.warning(f"BMI mismatch detected: {bmi_difference:.2f}")
 
     response = {
         "declared_bmi": declared_bmi,
-        "visual_bmi": visual_bmi,
+        "visual_bmi": round(visual_bmi, 2),
         "input_height_cm": declared_height_cm,
         "input_weight_kg": declared_weight_kg,
         "visual_height_ratio": round(visual_height_ratio, 3),
