@@ -54,13 +54,20 @@ def check_full_body_landmarks(landmarks):
             return False
     return True
 
-def calculate_visual_bmi(declared_weight_kg, visual_height_cm, shoulder_width_cm):
-    # Use the scaled visual height in meters for BMI calculation
-    visual_height_m = visual_height_cm / 100
-    if visual_height_m <= 0:
-        return {"error": "Invalid visual height."}
-    # Calculate the visual BMI using the scaled height
+def calculate_visual_bmi(declared_weight_kg, visual_height_ratio, shoulder_width_ratio):
+    if visual_height_ratio <= 0 or shoulder_width_ratio <= 0:
+        return {"error": "Invalid visual measurements."}
+
+    # Use a normalizing factor for height (1.7m as average height)
+    visual_height_m = 1.7  # Assume an average human height in meters
+
+    # Visual height is adjusted based on the body ratio
+    visual_height_m *= visual_height_ratio
+    visual_height_m /= shoulder_width_ratio  # Scale according to shoulder width
+
+    # Calculate the visual BMI using the visual height
     visual_bmi = declared_weight_kg / (visual_height_m ** 2)
+    
     return visual_bmi
 
 def calculate_bmi(image_path, declared_height_cm, declared_weight_kg):
@@ -97,14 +104,6 @@ def calculate_bmi(image_path, declared_height_cm, declared_weight_kg):
         (shoulder_right.z - shoulder_left.z) ** 2
     )
 
-    # --- Improved scaling using declared height ---
-    # Use declared height to scale visual measurements to real-world units
-    if visual_height_ratio == 0:
-        return {"error": "Invalid pose (visual height = 0)"}
-    scale = declared_height_cm / visual_height_ratio  # cm per normalized unit
-    visual_height_cm = visual_height_ratio * scale  # Should be equal to declared_height_cm
-    shoulder_width_cm = shoulder_width * scale
-
     # Aspect ratio for visual proportion (height-to-width)
     if shoulder_width == 0:
         return {"error": "Invalid pose (shoulder width = 0)"}
@@ -125,7 +124,7 @@ def calculate_bmi(image_path, declared_height_cm, declared_weight_kg):
         bmi_match = "Obesity"
 
     # Now, let's check if the declared BMI matches the calculated body ratio BMI
-    visual_bmi = calculate_visual_bmi(declared_weight_kg, visual_height_cm, shoulder_width_cm)
+    visual_bmi = calculate_visual_bmi(declared_weight_kg, visual_height_ratio, shoulder_width)
 
     # Difference threshold: We can set a tolerance for acceptable difference
     bmi_difference = abs(visual_bmi - declared_bmi)
