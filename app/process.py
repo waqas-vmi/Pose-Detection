@@ -62,7 +62,7 @@ def calculate_visual_bmi(declared_weight_kg, visual_height_ratio, shoulder_width
     body_ratio = visual_height_ratio / shoulder_width_ratio
 
     # Adjust visual height with empirically tuned scaling
-    visual_height_m = 1.65 + (body_ratio - 2) * 0.2  # 1.65m base + adjust slightly
+    visual_height_m = 1.7 + (body_ratio - 2) * 0.2  # 1.65m base + adjust slightly
 
     # Clamp to prevent unrealistic height
     visual_height_m = max(1.4, min(2.1, visual_height_m))
