@@ -11,6 +11,7 @@ import shutil
 import logging
 import os
 from app.process import calculate_bmi
+from app.process_images import calculate_bmi_from_images
 
 app = FastAPI()
 
@@ -45,6 +46,12 @@ class ImagePayload(BaseModel):
     height: float
     weight: float
     userId: int
+
+class CollectDataPayload(BaseModel):
+    back_image: str
+    front_image: str
+    height: float
+    weight: float
 
 @app.get("/", response_class=HTMLResponse)
 async def form_get(request: Request):
@@ -134,6 +141,55 @@ async def process_image_api(payload: ImagePayload, request: Request):
             "filename": filename,
             "bmi_result": result,
             "image_url": f"/static/uploads/{filename}"
+        }
+
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+    
+
+@app.post("/collect-data")
+async def collect_data_api(payload: CollectDataPayload, request: Request):
+    try:
+        back_image = payload.back_image
+        front_image = payload.front_image
+        height = payload.height
+        weight = payload.weight
+        userId = payload.userId
+        
+        if not back_image or not front_image or not height or not weight:
+            return JSONResponse(status_code=400, content={"error": "Invalid input data"})
+        # Check if image is a base64 string
+        if not isinstance(back_image, str) or not isinstance(front_image, str):
+            return JSONResponse(status_code=400, content={"error": "Images must be base64 strings"})
+
+        if back_image.startswith("data:"):
+            _, back_image = back_image.split(",", 1)
+        if front_image.startswith("data:"):
+            _, front_image = front_image.split(",", 1)
+
+        # Decode base64 string
+        back_image_data = base64.b64decode(back_image)
+        front_image_data = base64.b64decode(front_image)
+        # Save uploaded image
+        back_filename = f"back_{uuid.uuid4().hex}.jpg"
+        front_filename = f"front_{uuid.uuid4().hex}.jpg"
+        back_path = os.path.join(UPLOAD_DIR, back_filename)
+        front_path = os.path.join(UPLOAD_DIR, front_filename)
+        os.makedirs(UPLOAD_DIR, exist_ok=True)
+        with open(back_path, "wb") as bf:
+            bf.write(back_image_data)
+        with open(front_path, "wb") as ff:
+            ff.write(front_image_data)
+
+        # Process image using your logic
+        result = calculate_bmi_from_images(back_path, front_path, height, weight)
+
+        # Return result
+        if "error" in result:
+            return JSONResponse(status_code=400, content={"error": result["error"]})
+
+        return {
+            "success": True,
         }
 
     except Exception as e:
