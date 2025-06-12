@@ -154,7 +154,6 @@ async def collect_data_api(payload: CollectDataPayload, request: Request):
         front_image = payload.front_image
         height = payload.height
         weight = payload.weight
-        userId = payload.userId
         
         if not side_image or not front_image or not height or not weight:
             return JSONResponse(status_code=400, content={"error": "Invalid input data"})
