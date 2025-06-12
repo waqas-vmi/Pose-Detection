@@ -48,7 +48,7 @@ class ImagePayload(BaseModel):
     userId: int
 
 class CollectDataPayload(BaseModel):
-    back_image: str
+    side_image: str
     front_image: str
     height: float
     weight: float
@@ -150,39 +150,39 @@ async def process_image_api(payload: ImagePayload, request: Request):
 @app.post("/collect-data")
 async def collect_data_api(payload: CollectDataPayload, request: Request):
     try:
-        back_image = payload.back_image
+        side_image = payload.side_image
         front_image = payload.front_image
         height = payload.height
         weight = payload.weight
         userId = payload.userId
         
-        if not back_image or not front_image or not height or not weight:
+        if not side_image or not front_image or not height or not weight:
             return JSONResponse(status_code=400, content={"error": "Invalid input data"})
         # Check if image is a base64 string
-        if not isinstance(back_image, str) or not isinstance(front_image, str):
+        if not isinstance(side_image, str) or not isinstance(front_image, str):
             return JSONResponse(status_code=400, content={"error": "Images must be base64 strings"})
 
-        if back_image.startswith("data:"):
-            _, back_image = back_image.split(",", 1)
+        if side_image.startswith("data:"):
+            _, side_image = side_image.split(",", 1)
         if front_image.startswith("data:"):
             _, front_image = front_image.split(",", 1)
 
         # Decode base64 string
-        back_image_data = base64.b64decode(back_image)
+        side_image_data = base64.b64decode(side_image)
         front_image_data = base64.b64decode(front_image)
         # Save uploaded image
-        back_filename = f"back_{uuid.uuid4().hex}.jpg"
+        side_filename = f"side_{uuid.uuid4().hex}.jpg"
         front_filename = f"front_{uuid.uuid4().hex}.jpg"
-        back_path = os.path.join(UPLOAD_DIR, back_filename)
+        side_path = os.path.join(UPLOAD_DIR, side_filename)
         front_path = os.path.join(UPLOAD_DIR, front_filename)
         os.makedirs(UPLOAD_DIR, exist_ok=True)
-        with open(back_path, "wb") as bf:
-            bf.write(back_image_data)
+        with open(side_path, "wb") as bf:
+            bf.write(side_image_data)
         with open(front_path, "wb") as ff:
             ff.write(front_image_data)
 
         # Process image using your logic
-        result = calculate_bmi_from_images(back_path, front_path, height, weight)
+        result = calculate_bmi_from_images(side_path, front_path, height, weight)
 
         # Return result
         if "error" in result:
